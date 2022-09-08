@@ -657,11 +657,11 @@ class googleimagesdownload:
 
     # Download Image thumbnails
     def download_image_thumbnail(self, image_url, main_directory, dir_name, return_image_name, print_urls,
-                                 socket_timeout, print_size, no_download, save_source, img_src, ignore_urls):
-        if print_urls or no_download:
+                                 socket_timeout, print_size, no_download, save_source, img_src, ignore_urls, silent_mode):
+        if (not silent_mode) and (print_urls or no_download):
             print("Image URL: " + image_url)
         if no_download:
-            return "success", "Printed url without downloading"
+            return "success", "Printed url without downloading", image_url
         try:
             req = Request(image_url, headers={
                 "User-Agent": "Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.17 (KHTML, like Gecko) Chrome/24.0.1312.27 Safari/537.17"})
@@ -720,7 +720,7 @@ class googleimagesdownload:
         except IOError as e:  # If there is any IOError
             download_status = 'fail'
             download_message = "IOError on an image...trying next one..." + " Error: " + str(e)
-        return download_status, download_message
+        return download_status, download_message, image_url
 
     # Download Images
     def download_image(self, image_url, image_format, main_directory, dir_name, count, print_urls, socket_timeout,
@@ -909,18 +909,18 @@ class googleimagesdownload:
 
                     # download image_thumbnails
                     if arguments['thumbnail'] or arguments["thumbnail_only"]:
-                        download_status, download_message_thumbnail = self.download_image_thumbnail(
+                        download_status, download_message_thumbnail, absolute_path_tn = self.download_image_thumbnail(
                             object['image_thumbnail_url'], main_directory, dir_name, return_image_name,
                             arguments['print_urls'], arguments['socket_timeout'], arguments['print_size'],
                             arguments['no_download'], arguments['save_source'], object['image_source'],
-                            arguments['ignore_urls'])
+                            arguments['ignore_urls'], arguments['silent_mode'])
                         if not arguments["silent_mode"]:
                             print(download_message_thumbnail)
 
                     count += 1
                     object['image_filename'] = return_image_name
                     items.append(object)  # Append all the links in the list named 'Links'
-                    abs_path.append(absolute_path)
+                    abs_path.append((absolute_path, absolute_path_tn) if ((arguments['thumbnail']) or (arguments['thumbnail_only'])) else absolute_path)
                 else:
                     errorCount += 1
 
@@ -962,6 +962,8 @@ class googleimagesdownload:
                 return paths_agg, total_errors
             # if the calling file contains params directly
             else:
+                # if thumbnail is False => String keyword: list of image urls
+                # if thumbnail is True  => String keyword: list of (image url, thumbnail url)
                 paths, errors = self.download_executor(arguments)
                 for i in paths:
                     paths_agg[i] = paths[i]
