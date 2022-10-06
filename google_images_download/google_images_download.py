@@ -199,9 +199,25 @@ class googleimagesdownload:
         lines = data.split('\n')
         return json.loads(lines[3])[0][2]
 
+    # def _image_objects_from_pack(self, data):
+    #     image_objects = json.loads(data)[31][-1][12][2]
+    #     image_objects = [x for x in image_objects if x[0] == 1]
+    #     return image_objects
+
     def _image_objects_from_pack(self, data):
-        image_objects = json.loads(data)[31][-1][12][2]
-        image_objects = [x for x in image_objects if x[0] == 1]
+        image_data = json.loads(data)
+        # NOTE: google sometimes changes their format, breaking this. set a breakpoint here to find the correct index
+        idx = 56
+        grid = image_data[idx][-1][0][-1][-1][0]
+        # grid = image_data[31][0][12][2]
+        image_objects = []
+        for item in grid:
+            obj = list(item[0][0].values())[0]
+            # ads and carousels will be empty
+        # for obj in grid:
+            if not obj or not obj[1]:
+                continue
+            image_objects.append(obj)
         return image_objects
 
     # Downloading entire Web Document (Raw Page Content)
@@ -217,9 +233,11 @@ class googleimagesdownload:
                 resp = urllib.request.urlopen(req)
                 respData = str(resp.read())
             except:
-                print("Could not open URL. Please check your internet connection and/or ssl settings \n"
-                      "If you are using proxy, make sure your proxy settings is configured correctly")
-                sys.exit()
+                raise Exception("Could not open URL. Please check your internet connection and/or ssl settings \n"
+                                "If you are using proxy, make sure your proxy settings is configured correctly")
+                # print("Could not open URL. Please check your internet connection and/or ssl settings \n"
+                #       "If you are using proxy, make sure your proxy settings is configured correctly")
+                # sys.exit()
         else:  # If the Current Version of Python is 2.x
             try:
                 req = urllib2.Request(url, headers=headers)
@@ -230,16 +248,19 @@ class googleimagesdownload:
                     response = urlopen(req, context=context)
                 respData = response.read()
             except:
-                print("Could not open URL. Please check your internet connection and/or ssl settings \n"
-                      "If you are using proxy, make sure your proxy settings is configured correctly")
-                sys.exit()
-                return "Page Not found"
+                raise Exception("Could not open URL. Please check your internet connection and/or ssl settings \n"
+                                "If you are using proxy, make sure your proxy settings is configured correctly")
+                # print("Could not open URL. Please check your internet connection and/or ssl settings \n"
+                #       "If you are using proxy, make sure your proxy settings is configured correctly")
+                # sys.exit()
+                # return "Page Not found"
         try:
             return self._image_objects_from_pack(self._extract_data_pack(respData)), self.get_all_tabs(respData)
         except Exception as e:
-            print(e)
-            print('Image objects data unpacking failed. Please leave a comment with the above error at https://github.com/hardikvasa/google-images-download/pull/298')
-            sys.exit()
+            raise Exception('Image objects data unpacking failed. Please leave a comment with the above error at https://github.com/hardikvasa/google-images-download/pull/298')
+            # print(e)
+            # print('Image objects data unpacking failed. Please leave a comment with the above error at https://github.com/hardikvasa/google-images-download/pull/298')
+            # sys.exit()
 
     # Download Page for more than 100 images
     def download_extended_page(self, url, chromedriver, browser):
@@ -259,10 +280,13 @@ class googleimagesdownload:
             try:
                 browser = webdriver.Chrome(chromedriver, chrome_options=options)
             except Exception as e:
-                print("Looks like we cannot locate the path the 'chromedriver' (use the '--chromedriver' "
-                      "argument to specify the path to the executable.) or google chrome browser is not "
-                      "installed on your machine (exception: %s)" % e)
-                sys.exit()
+                raise Exception("Looks like we cannot locate the path the 'chromedriver' (use the '--chromedriver' "
+                                "argument to specify the path to the executable.) or google chrome browser is not "
+                                "installed on your machine (exception: %s)" % e)
+                # print("Looks like we cannot locate the path the 'chromedriver' (use the '--chromedriver' "
+                #       "argument to specify the path to the executable.) or google chrome browser is not "
+                #       "installed on your machine (exception: %s)" % e)
+                # sys.exit()
         browser.set_window_size(1024, 768)
 
         # Open the link
@@ -619,9 +643,11 @@ class googleimagesdownload:
                     else:
                         search_keyword.append(line.replace('\n', '').replace('\r', ''))
             else:
-                print("Invalid file type: Valid file types are either .txt or .csv \n"
-                      "exiting...")
-                sys.exit()
+                raise Exception("Invalid file type: Valid file types are either .txt or .csv \n"
+                                "exiting...")
+                # print("Invalid file type: Valid file types are either .txt or .csv \n"
+                #       "exiting...")
+                # sys.exit()
         return search_keyword
 
     # make directories
@@ -928,7 +954,7 @@ class googleimagesdownload:
                 if arguments['delay']:
                     time.sleep(int(arguments['delay']))
             i += 1
-        if count < limit:
+        if (count < limit) and (not arguments["silent_mode"]):
             print("\n\nUnfortunately all " + str(
                 limit) + " could not be downloaded because some images were not downloadable. " + str(
                 count - 1) + " is all we got for this search filter!")
@@ -1037,13 +1063,19 @@ class googleimagesdownload:
         # If single_image or url argument not present then keywords is mandatory argument
         if arguments['single_image'] is None and arguments['url'] is None and arguments['similar_images'] is None and \
                 arguments['keywords'] is None and arguments['keywords_from_file'] is None:
-            print('-------------------------------\n'
-                  'Uh oh! Keywords is a required argument \n\n'
-                  'Please refer to the documentation on guide to writing queries \n'
-                  'https://github.com/hardikvasa/google-images-download#examples'
-                  '\n\nexiting!\n'
-                  '-------------------------------')
-            sys.exit()
+            raise Exception('-------------------------------\n'
+                            'Uh oh! Keywords is a required argument \n\n'
+                            'Please refer to the documentation on guide to writing queries \n'
+                            'https://github.com/hardikvasa/google-images-download#examples'
+                            '\n\nexiting!\n'
+                            '-------------------------------')
+            # print('-------------------------------\n'
+            #       'Uh oh! Keywords is a required argument \n\n'
+            #       'Please refer to the documentation on guide to writing queries \n'
+            #       'https://github.com/hardikvasa/google-images-download#examples'
+            #       '\n\nexiting!\n'
+            #       '-------------------------------')
+            # sys.exit()
 
         # If this argument is present, set the custom output directory
         if arguments['output_directory']:
@@ -1079,7 +1111,7 @@ class googleimagesdownload:
                     if not arguments["silent_mode"]:
                         print(iteration.encode('raw_unicode_escape').decode('utf-8'))
                         print("Evaluating...")
-                    else:
+                    # else:
                         print("Downloading images for: " + (pky) + (search_keyword[i]) + (sky) + " ...")
                     search_term = pky + search_keyword[i] + sky
 
